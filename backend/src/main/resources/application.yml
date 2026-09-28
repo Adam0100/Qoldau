@@ -1,0 +1,28 @@
+server:
+  port: ${PORT:8080}
+  servlet:
+    session:
+      timeout: 8h
+      cookie:
+        http-only: true
+        secure: ${COOKIE_SECURE:false}
+        same-site: ${COOKIE_SAME_SITE:lax}
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/qoldau}
+    username: ${DB_USER:qoldau}
+    password: ${DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+app:
+  frontend-origin: ${FRONTEND_ORIGIN:http://localhost:5173}
+logging:
+  level:
+    org.springframework.web: INFO
+    org.hibernate.SQL: INFO
+
