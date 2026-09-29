@@ -58,7 +58,7 @@ public class AuctionController {
   @PostMapping
   public Lot create(@Valid @RequestBody Input in) {
     if (!in.endsAt().isAfter(in.startsAt()))
-      throw ApiException.conflict("Окончание должно быть позже начала");
+      throw ApiException.conflict("End time must be after start time");
     var l = new Lot();
     l.sellerId = current.get().id;
     l.title = in.title().trim();

@@ -11,11 +11,11 @@ public class ApiException extends RuntimeException {
   }
 
   public static ApiException missing() {
-    return new ApiException(HttpStatus.NOT_FOUND, "Запись не найдена");
+    return new ApiException(HttpStatus.NOT_FOUND, "Entry not found");
   }
 
   public static ApiException forbidden() {
-    return new ApiException(HttpStatus.FORBIDDEN, "Недостаточно прав");
+    return new ApiException(HttpStatus.FORBIDDEN, "Access denied");
   }
 
   public static ApiException conflict(String message) {

@@ -19,7 +19,7 @@ test("reference screens, honest unavailable features and responsive layouts", as
     fullPage: true,
   });
   await page.getByRole("link", { name: "Get started", exact: true }).click();
-  await expect(page.getByLabel("Ваше имя", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Your name", { exact: true })).toBeVisible();
   const token = (await (await context.request.get("/api/auth/csrf")).json())
     .token;
   const credentials = {
@@ -50,9 +50,9 @@ test("reference screens, honest unavailable features and responsive layouts", as
     return response.json();
   };
   const request = await post("/requests", {
-    title: "Помочь с покупками",
+    title: "Offer help с покупками",
     description:
-      "Нужна помощь с продуктами: молоко, хлеб и овощи. Буду рада вашей поддержке.",
+      "Help needed с продуктами: молоко, хлеб и овощи. Буду рада вашей поддержке.",
     city: "Тестовый город",
     category: "EVERYDAY",
     status: "OPEN",
@@ -90,15 +90,15 @@ test("reference screens, honest unavailable features and responsive layouts", as
   const screens = [
     ["requests", "/requests", "Nearby requests"],
     ["map", "/map", "Nearby requests"],
-    ["detail", "/requests/" + request.id, "Помочь с покупками"],
+    ["detail", "/requests/" + request.id, "Offer help с покупками"],
     ["stars", "/stars", "Qoldau Stars"],
     ["profile", "/profile", "Дана"],
     ["wishes", "/wishes", "Wishes"],
-    ["auctions", "/auctions", "Благотворительные аукционы"],
+    ["auctions", "/auctions", "Charity auctions"],
     ["auction", "/auctions/" + lot.id, "Гитара с историей"],
-    ["settings", "/profile/settings", "Настройки профиля"],
-    ["create", "/new", "О чём попросим?"],
-    ["my-requests", "/my-requests", "Мои просьбы"],
+    ["settings", "/profile/settings", "Profile settings"],
+    ["create", "/new", "What do you need help with?"],
+    ["my-requests", "/my-requests", "My requests"],
   ];
   for (const [name, path, title] of screens) {
     await page.goto(path);
@@ -124,15 +124,18 @@ test("reference screens, honest unavailable features and responsive layouts", as
   await page.goto("/stars");
   await expect(page.getByRole("button", { name: /Cash/ })).toBeDisabled();
   await expect(
-    page.getByText("Баллы и ранги пока не начисляются.", { exact: true }),
+    page.getByText(
+      "Earn Stars by completing requests. Ranks are not available yet.",
+      { exact: true },
+    ),
   ).toBeVisible();
   await page.goto("/profile");
   await expect(
-    page.getByRole("button", { name: /My help history/ }),
-  ).toBeDisabled();
+    page.getByRole("link", { name: /My help history/ }),
+  ).toHaveAttribute("href", "#help-history");
   if (testInfo.project.name === "mobile") {
     await expect(
-      page.getByRole("navigation", { name: "Основная навигация" }),
+      page.getByRole("navigation", { name: "Main navigation" }),
     ).toBeVisible();
     for (const width of [320, 768, 1024]) {
       await page.setViewportSize({ width, height: 900 });

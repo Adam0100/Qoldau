@@ -57,12 +57,12 @@ export function LoadState({
       type="error"
       showIcon
       message={error}
-      action={<Button onClick={retry}>Повторить</Button>}
+      action={<Button onClick={retry}>Retry</Button>}
     />
   ) : null;
 }
 export function NoData({
-  text = "Пока здесь тихо. Первая запись может быть вашей.",
+  text = "Nothing here yet. Be the first to post.",
 }: {
   text?: string;
 }) {
@@ -78,10 +78,10 @@ export function RequireUser({ children }: { children: React.ReactNode }) {
     <>{children}</>
   ) : (
     <div className="panel">
-      <h2>Давайте познакомимся</h2>
-      <p>Войдите, чтобы публиковать просьбы и поддерживать других.</p>
+      <h2>Let us get to know you</h2>
+      <p>Sign in to post requests and support others.</p>
       <Link to="/login">
-        <Button type="primary">Войти или зарегистрироваться</Button>
+        <Button type="primary">Sign in or register</Button>
       </Link>
     </div>
   );
@@ -102,8 +102,8 @@ export function Field({
       name={name}
       label={label}
       rules={[
-        { required: true, whitespace: true, message: "Заполните поле" },
-        { max, message: "Слишком длинный текст" },
+        { required: true, whitespace: true, message: "This field is required" },
+        { max, message: "Text is too long" },
       ]}
     >
       {area ? (
@@ -115,21 +115,32 @@ export function Field({
   );
 }
 export const categories = [
-  { value: "EVERYDAY", label: "Повседневная помощь" },
-  { value: "TRANSPORT", label: "Транспорт" },
-  { value: "EDUCATION", label: "Обучение" },
-  { value: "OTHER", label: "Другое" },
+  { value: "EVERYDAY", label: "Everyday help" },
+  { value: "TRANSPORT", label: "Transport" },
+  { value: "EDUCATION", label: "Education" },
+  { value: "OTHER", label: "Other" },
 ];
 export const categoryName = (value: string) =>
   categories.find((x) => x.value === value)?.label || value;
+export const statusName = (value: string) =>
+  ({
+    OPEN: "Open",
+    IN_PROGRESS: "In progress",
+    COMPLETED: "Completed",
+    CLOSED: "Cancelled",
+    CANCELLED: "Cancelled",
+    PENDING: "Pending",
+    SELECTED: "Selected",
+    NOT_SELECTED: "Not selected",
+  })[value] || value;
 export const money = (value: number) =>
-  new Intl.NumberFormat("ru-KZ", {
+  new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "KZT",
     maximumFractionDigits: 2,
   }).format(value);
 export const date = (value: string) =>
-  new Date(value).toLocaleString("ru-RU", {
+  new Date(value).toLocaleString("en-US", {
     day: "numeric",
     month: "short",
     hour: "2-digit",

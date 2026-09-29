@@ -28,7 +28,7 @@ public class AuthController {
 
   public record Register(
       @NotBlank @Email @Size(max = 254) String email,
-      @NotBlank @Size(min = 10, max = 64) String password,
+      @NotBlank @Size(min = 6, max = 64) String password,
       @NotBlank @Size(max = 80) String name,
       @NotBlank @Size(max = 100) String city) {
     @Override
@@ -60,7 +60,7 @@ public class AuthController {
     if (in.password().getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72)
       throw new ApiException(
           org.springframework.http.HttpStatus.BAD_REQUEST,
-          "Пароль должен занимать не более 72 байт UTF-8");
+          "Password must not exceed 72 UTF-8 bytes");
     var u = new User();
     u.email = in.email().trim().toLowerCase(Locale.ROOT);
     u.passwordHash = encoder.encode(in.password());
@@ -74,7 +74,7 @@ public class AuthController {
       @Valid @RequestBody Login in, HttpServletRequest req, HttpServletResponse res) {
     if (in.password().getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72)
       throw new ApiException(
-          org.springframework.http.HttpStatus.UNAUTHORIZED, "Неверный email или пароль");
+          org.springframework.http.HttpStatus.UNAUTHORIZED, "Invalid email or password");
     var u =
         users
             .findByEmail(in.email().trim().toLowerCase(Locale.ROOT))
@@ -83,7 +83,7 @@ public class AuthController {
                 () ->
                     new ApiException(
                         org.springframework.http.HttpStatus.UNAUTHORIZED,
-                        "Неверный email или пароль"));
+                        "Invalid email or password"));
     if (req.getSession(false) != null) req.changeSessionId();
     var context = SecurityContextHolder.createEmptyContext();
     context.setAuthentication(new UsernamePasswordAuthenticationToken(u.id, null, List.of()));

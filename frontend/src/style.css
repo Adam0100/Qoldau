@@ -142,7 +142,7 @@ button:focus-visible {
   font-size: 0;
 }
 .side-main-nav .create-nav span:last-child:after {
-  content: "Создать просьбу";
+  content: "Create request";
   font-size: 14px;
 }
 .side-community {

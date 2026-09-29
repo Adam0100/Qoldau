@@ -46,7 +46,7 @@ public class SecurityConfig {
                         (req, res, ex) -> {
                           res.setStatus(401);
                           res.setContentType("application/json;charset=UTF-8");
-                          res.getWriter().write("{\"message\":\"Войдите в аккаунт\"}");
+                          res.getWriter().write("{\"message\":\"Please sign in\"}");
                         })
                     .accessDeniedHandler(
                         (req, res, ex) -> {
@@ -54,8 +54,8 @@ public class SecurityConfig {
                           res.setContentType("application/json;charset=UTF-8");
                           res.getWriter()
                               .write(
-                                  "{\"message\":\"Доступ запрещён или CSRF-токен устарел. Обновите"
-                                      + " страницу\"}");
+                                  "{\"message\":\"Access denied or CSRF token expired. Refresh"
+                                      + " the page\"}");
                         }))
         .logout(
             l ->

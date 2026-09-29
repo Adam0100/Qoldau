@@ -23,7 +23,7 @@ import {
   ArrowLeftOutlined,
   PictureOutlined,
 } from "@ant-design/icons";
-import { api, Page, Request } from "./api";
+import { api, Page, Request, Offer } from "./api";
 import {
   useLoad,
   LoadState,
@@ -34,6 +34,7 @@ import {
   categories,
   categoryName,
   date,
+  statusName,
 } from "./shared";
 import { CategoryIcon, CommunityLinks, PageHeading, BrandMark } from "./design";
 
@@ -70,7 +71,7 @@ export function RequestRow({
           }
           to={"/requests/" + r.id}
         >
-          {r.status === "OPEN" ? "Помочь" : "Закрыта"}
+          {r.status === "OPEN" ? "Offer help" : statusName(r.status)}
         </Link>
       </div>
       {compact && <RightOutlined className="row-chevron" />}
@@ -93,12 +94,16 @@ export function Home() {
     <section className="nearby-page">
       <div className="list-title">
         <h1>Nearby requests</h1>
-        <Link to="/profile" className="icon-button" aria-label="Профиль">
+        <Link to="/profile" className="icon-button" aria-label="Profile">
           <UserOutlined />
         </Link>
       </div>
-      <div className="category-tabs" role="group" aria-label="Категории просьб">
-        {[{ value: "", label: "Все" }, ...categories].map((c) => (
+      <div
+        className="category-tabs"
+        role="group"
+        aria-label="Request categories"
+      >
+        {[{ value: "", label: "All" }, ...categories].map((c) => (
           <button
             key={c.value}
             aria-pressed={category === c.value}
@@ -115,14 +120,14 @@ export function Home() {
       <div className="list-search">
         <Input.Search
           allowClear
-          placeholder="Поиск по городу"
-          aria-label="Поиск по городу"
+          placeholder="Search by city"
+          aria-label="Search by city"
           onSearch={(v) => {
             setCity(v.trim());
             setPage(1);
           }}
         />
-        <span>Без расчёта расстояний</span>
+        <span>Distances are not calculated</span>
       </div>
       <LoadState {...load} retry={load.reload} />
       {!load.loading && !load.error && (
@@ -134,7 +139,7 @@ export function Home() {
               ))}
             </div>
           ) : (
-            <NoData text="Просьб пока нет. Расскажите, какая помощь вам нужна." />
+            <NoData text="No requests yet. Tell us what help you need." />
           )}
           <Pagination
             current={page}
@@ -163,10 +168,10 @@ export function MapPage() {
       <header className="map-toolbar">
         <button onClick={() => setSearch((v) => !v)}>
           <EnvironmentFilled />
-          {city || "Все города"}
+          {city || "All cities"}
           <DownOutlined />
         </button>
-        <Link to="/profile" className="icon-button" aria-label="Профиль">
+        <Link to="/profile" className="icon-button" aria-label="Profile">
           <UserOutlined />
         </Link>
       </header>
@@ -174,8 +179,8 @@ export function MapPage() {
         <div className="map-search">
           <Input.Search
             autoFocus
-            aria-label="Город на карте"
-            placeholder="Введите город"
+            aria-label="Map city"
+            placeholder="Enter a city"
             defaultValue={city}
             onSearch={(v) => {
               setCity(v.trim());
@@ -211,8 +216,10 @@ export function MapPage() {
         </svg>
         <div className="map-unavailable">
           <EnvironmentOutlined />
-          <strong>Карта пока не подключена.</strong>
-          <span>Это иллюстрация. Ниже — настоящие просьбы по городу.</span>
+          <strong>The map is not connected yet.</strong>
+          <span>
+            This is an illustration. Browse real requests by city below.
+          </span>
         </div>
       </div>
       <div className="map-sheet">
@@ -227,7 +234,7 @@ export function MapPage() {
               ))}
             </div>
           ) : (
-            <NoData text="В этом городе пока нет просьб" />
+            <NoData text="No requests in this city yet" />
           ))}
         <Pagination
           current={page}
@@ -281,7 +288,7 @@ function OwnRequests() {
   }, [user?.id, revision]);
   return (
     <>
-      <PageHeading title="Мои просьбы" to="/profile" />
+      <PageHeading title="My requests" to="/profile" />
       <LoadState
         loading={loading}
         error={error}
@@ -296,10 +303,10 @@ function OwnRequests() {
             ))}
           </div>
         ) : (
-          <NoData text="Вы ещё не публиковали просьбы" />
+          <NoData text="You have not posted any requests yet" />
         ))}
       <Link to="/new">
-        <Button type="primary">Создать просьбу</Button>
+        <Button type="primary">Create request</Button>
       </Link>
     </>
   );
@@ -325,7 +332,7 @@ function Editor() {
       api<Request>("/requests/" + id)
         .then((r) => {
           if (r.authorId !== user!.id)
-            throw new Error("Редактировать просьбу может только автор");
+            throw new Error("Only the author can edit this request");
           form.setFieldsValue(r);
           setReady(true);
         })
@@ -339,7 +346,7 @@ function Editor() {
         id ? "PUT" : "POST",
         { ...values, status: id ? values.status : "OPEN" },
       );
-      message.success("Просьба сохранена");
+      message.success("Request saved");
       navigate("/requests/" + r.id);
     } catch (e) {
       setError((e as Error).message);
@@ -350,11 +357,11 @@ function Editor() {
   return (
     <>
       <Link className="back-link" to="/">
-        ← К просьбам
+        ← Back to requests
       </Link>
-      <h1>{id ? "Редактировать просьбу" : "О чём попросим?"}</h1>
+      <h1>{id ? "Edit request" : "What do you need help with?"}</h1>
       <p className="intro">
-        Расскажите, что вам нужно. Рядом найдётся человек, готовый помочь.
+        Tell us what you need. Someone nearby may be able to help.
       </p>
       <div className="panel form-panel">
         {error && <Alert type="error" message={error} />}{" "}
@@ -369,25 +376,25 @@ function Editor() {
               status: "OPEN",
             }}
           >
-            <Field name="title" label="Название просьбы" />
-            <Field name="description" label="Подробности" max={5000} area />
-            <Field name="city" label="Город" max={100} />
-            <Form.Item name="category" label="Категория">
+            <Field name="title" label="Request title" />
+            <Field name="description" label="Details" max={5000} area />
+            <Field name="city" label="City" max={100} />
+            <Form.Item name="category" label="Category">
               <Select options={categories} />
             </Form.Item>
             {id && (
-              <Form.Item name="status" label="Статус">
+              <Form.Item name="status" label="Status">
                 <Select
                   options={[
-                    { value: "OPEN", label: "Открыта" },
-                    { value: "CLOSED", label: "Закрыта" },
+                    { value: "OPEN", label: "Open" },
+                    { value: "CANCELLED", label: "Cancelled" },
                   ]}
                 />
               </Form.Item>
             )}
             <Button htmlType="submit" type="primary" loading={busy}>
               {" "}
-              {id ? "Сохранить изменения" : "Опубликовать просьбу"}
+              {id ? "Save changes" : "Post request"}
             </Button>
           </Form>
         )}
@@ -404,13 +411,29 @@ export function RequestDetail() {
   const [sent, setSent] = useState(false);
   const [replyOpen, setReplyOpen] = useState(false);
   const r = load.data;
+  useEffect(() => {
+    let active = true;
+    setSent(false);
+    if (user && r && r.authorId !== user.id) {
+      api<Offer[]>("/requests/" + id + "/responses/mine")
+        .then((items) => {
+          if (active) setSent(items.length > 0);
+        })
+        .catch(() => {
+          /* The offers panel displays loading errors. */
+        });
+    }
+    return () => {
+      active = false;
+    };
+  }, [id, user?.id, r?.authorId]);
   async function respond(values: any) {
     setBusy(true);
     try {
       await api("/requests/" + id + "/responses", "POST", values);
       setSent(true);
       setReplyOpen(false);
-      message.success("Автор получил ваш отклик");
+      message.success("Your offer has been sent to the author");
     } catch (e) {
       message.error((e as Error).message);
     } finally {
@@ -426,7 +449,7 @@ export function RequestDetail() {
             <Link
               to="/requests"
               className="cover-back"
-              aria-label="Назад к просьбам"
+              aria-label="Back to requests"
             >
               <ArrowLeftOutlined />
             </Link>
@@ -434,7 +457,7 @@ export function RequestDetail() {
               <CategoryIcon category={r.category} />
             </div>
             <span className="cover-caption">
-              <PictureOutlined /> Фото не добавлено
+              <PictureOutlined /> No photo added
             </span>
             <BrandMark className="cover-leaf" />
           </div>
@@ -444,9 +467,9 @@ export function RequestDetail() {
               <h1>{r.title}</h1>
               <span
                 className="unavailable-stars"
-                title="Stars за просьбы пока не начисляются"
+                title="Awarded to the selected helper after confirmation"
               >
-                <StarFilled /> —
+                <StarFilled /> {r.rewardStars}
               </span>
             </div>
             <p className="body-text">{r.description}</p>
@@ -457,31 +480,33 @@ export function RequestDetail() {
               <h2>Details</h2>
               <p>
                 <ClockCircleOutlined />
-                <span>Статус:</span>{" "}
-                {r.status === "OPEN" ? "Нужна помощь" : "Закрыта"}
+                <span>Status:</span> {statusName(r.status)}
               </p>
               <p>
                 <CategoryIcon category={r.category} />
-                <span>Категория:</span> {categoryName(r.category)}
+                <span>Category:</span> {categoryName(r.category)}
               </p>
               <p>
                 <StarFilled />
-                <span>Награда:</span> Stars пока не начисляются
+                <span>Reward:</span> {r.rewardStars} Stars for the selected
+                helper
               </p>
             </section>
             <div className="detail-actions">
               {r.authorId === user?.id ? (
                 <>
-                  <Link to={"/requests/" + id + "/edit"}>
-                    <Button block type="primary">
-                      Редактировать
-                    </Button>
-                  </Link>
-                  <Replies id={id!} />
+                  {r.status === "OPEN" && (
+                    <Link to={"/requests/" + id + "/edit"}>
+                      <Button block type="primary">
+                        Edit
+                      </Button>
+                    </Link>
+                  )}
+                  <Replies request={r} reload={load.reload} />
                 </>
               ) : r.status === "OPEN" ? (
                 sent ? (
-                  <Alert type="success" message="Ваш отклик отправлен" />
+                  <Alert type="success" message="Your offer has been sent" />
                 ) : (
                   <RequireUser>
                     <Button
@@ -489,22 +514,25 @@ export function RequestDetail() {
                       type="primary"
                       onClick={() => setReplyOpen(true)}
                     >
-                      Хочу помочь
+                      Offer help
                     </Button>
                   </RequireUser>
                 )
               ) : (
-                <Alert message="Эта просьба закрыта" type="info" />
+                <Alert message="This request is no longer open" type="info" />
               )}
               <Button block disabled icon={<MessageOutlined />}>
-                Message · скоро
+                Message · coming soon
               </Button>
+              {user && r.authorId !== user.id && (
+                <Replies request={r} reload={load.reload} own revision={sent} />
+              )}
             </div>
           </div>
         </article>
       )}
       <Modal
-        title="Хочу помочь"
+        title="Offer help"
         open={replyOpen}
         onCancel={() => {
           if (!busy) setReplyOpen(false);
@@ -512,37 +540,168 @@ export function RequestDetail() {
         footer={null}
         destroyOnHidden
       >
-        <Form layout="vertical" onFinish={respond}>
-          <Field
-            name="message"
-            label="Как вы можете помочь? Оставьте способ связи, если хотите."
-            max={1000}
-            area
-          />
+        <Form
+          layout="vertical"
+          onFinish={respond}
+          initialValues={{ email: user?.email || "", phone: "" }}
+        >
+          <Field name="message" label="Message to the author" max={1000} area />
+          <p>
+            Provide at least one contact. Only you and the request author can
+            see your contacts.
+          </p>
+          <Form.Item
+            name="phone"
+            label="Phone number"
+            dependencies={["email"]}
+            rules={[
+              { max: 40, message: "Phone number is too long" },
+              {
+                validator: (_, value) =>
+                  !value?.trim() ||
+                  (/^[+0-9() .-]{6,40}$/.test(value.trim()) &&
+                    value.replace(/\D/g, "").length >= 6)
+                    ? Promise.resolve()
+                    : Promise.reject(new Error("Enter a valid phone number")),
+              },
+              ({ getFieldValue }) => ({
+                validator: (_, value) =>
+                  value?.trim() || getFieldValue("email")?.trim()
+                    ? Promise.resolve()
+                    : Promise.reject(
+                        new Error("Provide a phone number or email address"),
+                      ),
+              }),
+            ]}
+          >
+            <Input type="tel" autoComplete="tel" maxLength={40} />
+          </Form.Item>
+          <Form.Item
+            name="email"
+            label="Contact email"
+            dependencies={["phone"]}
+            rules={[
+              {
+                type: "email",
+                transform: (value) => value?.trim(),
+                message: "Enter a valid email address",
+              },
+              { max: 254, message: "Email address is too long" },
+              ({ getFieldValue }) => ({
+                validator: (_, value) =>
+                  value?.trim() || getFieldValue("phone")?.trim()
+                    ? Promise.resolve()
+                    : Promise.reject(
+                        new Error("Provide a phone number or email address"),
+                      ),
+              }),
+            ]}
+          >
+            <Input autoComplete="email" maxLength={254} />
+          </Form.Item>
           <Button type="primary" block htmlType="submit" loading={busy}>
-            Отправить отклик
+            Send offer
           </Button>
         </Form>
       </Modal>
     </>
   );
 }
-function Replies({ id }: { id: string }) {
-  const load = useLoad<any[]>("/requests/" + id + "/responses");
+function Replies({
+  request: r,
+  reload,
+  own = false,
+  revision,
+}: {
+  request: Request;
+  reload: () => void;
+  own?: boolean;
+  revision?: boolean;
+}) {
+  const load = useLoad<Offer[]>(
+    "/requests/" + r.id + "/responses" + (own ? "/mine" : ""),
+  );
+  const { message, modal } = App.useApp();
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    load.reload();
+  }, [revision, r.status, load.reload]);
+  async function action(path: string) {
+    setBusy(true);
+    try {
+      await api("/requests/" + r.id + path, "POST");
+      reload();
+      load.reload();
+      message.success(
+        path === "/complete"
+          ? "Help confirmed. Stars awarded to the helper."
+          : "Request updated",
+      );
+    } catch (e) {
+      message.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  const selected = load.data?.find((x) => x.id === r.selectedResponseId);
   return (
     <section>
-      <h2>Отклики</h2>
+      <h2>{own ? "Your offer" : "Offers"}</h2>
       <LoadState {...load} retry={load.reload} />
       {load.data?.length
         ? load.data.map((x) => (
             <div className="reply" key={x.id}>
               <strong>{x.name}</strong>
               <p className="body-text">{x.message}</p>
+              <p>Phone: {x.phone || "Not provided"}</p>
+              <p>Email: {x.email || "Not provided"}</p>
+              <Tag>{statusName(x.status)}</Tag>
               <small>{date(x.createdAt)}</small>
+              {!own && r.status === "OPEN" && (
+                <Button
+                  loading={busy}
+                  onClick={() => action("/responses/" + x.id + "/select")}
+                >
+                  Select helper
+                </Button>
+              )}
             </div>
           ))
-        : !load.loading &&
-          !load.error && <NoData text="Пока никто не откликнулся" />}
+        : !load.loading && !load.error && <NoData text="No offers yet" />}
+      {!own && r.status === "IN_PROGRESS" && selected && (
+        <Button
+          type="primary"
+          loading={busy}
+          onClick={() =>
+            modal.confirm({
+              title: "Confirm help received",
+              content: `${selected.name} will receive ${r.rewardStars} Qoldau Stars. Confirm that you received their help.`,
+              okText: "Confirm help received",
+              cancelText: "Go back",
+              onOk: () => action("/complete"),
+            })
+          }
+        >
+          Confirm help received
+        </Button>
+      )}
+      {!own && ["OPEN", "IN_PROGRESS"].includes(r.status) && (
+        <Button
+          danger
+          loading={busy}
+          onClick={() =>
+            modal.confirm({
+              title: "Cancel request?",
+              content: "No Stars will be awarded.",
+              okText: "Cancel request",
+              cancelText: "Go back",
+              onOk: () => action("/cancel"),
+            })
+          }
+        >
+          Cancel request
+        </Button>
+      )}
     </section>
   );
 }

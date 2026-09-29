@@ -1,4 +1,6 @@
 import { Link } from "react-router-dom";
+import { RewardsSummary } from "./api";
+import { useLoad, RequireUser, LoadState } from "./shared";
 import {
   ArrowLeftOutlined,
   HeartFilled,
@@ -108,7 +110,7 @@ export function PageHeading({
 }) {
   return (
     <div className="page-heading">
-      <Link className="icon-button" to={to} aria-label="Назад">
+      <Link className="icon-button" to={to} aria-label="Back">
         <ArrowLeftOutlined />
       </Link>
       <h1>{title}</h1>
@@ -134,24 +136,24 @@ export function Rewards() {
         {
           icon: <WalletOutlined />,
           name: "Cash",
-          text: "Обмен Stars на деньги",
+          text: "Exchange Stars for cash",
         },
         {
           icon: <CoffeeOutlined />,
           name: "Café discounts",
-          text: "Скидки в кафе",
+          text: "Café discounts",
         },
         {
           icon: <ShoppingOutlined />,
           name: "Partner rewards",
-          text: "Предложения партнёров",
+          text: "Partner offers",
         },
       ].map((r, i) => (
         <button key={r.name} className="menu-row reward-row" disabled>
           <span className={"menu-icon tone-" + i}>{r.icon}</span>
           <span>
             <strong>{r.name}</strong>
-            <small>{r.text} · скоро</small>
+            <small>{r.text} · coming soon</small>
           </span>
           <RightOutlined />
         </button>
@@ -161,17 +163,28 @@ export function Rewards() {
 }
 export function StarsOverview() {
   return (
+    <RequireUser>
+      <MemberStarsOverview />
+    </RequireUser>
+  );
+}
+function MemberStarsOverview() {
+  const rewards = useLoad<RewardsSummary>("/me/stars");
+  return (
     <>
-      <div className="stars-balance" aria-label="Баланс Stars пока недоступен">
+      <LoadState {...rewards} retry={rewards.reload} />
+      <div className="stars-balance" aria-label="Stars balance">
         <StarFilled />
-        <strong>—</strong>
+        <strong>{rewards.data?.balance ?? "—"}</strong>
       </div>
       <div className="rank-track" aria-hidden="true" />
       <div className="rank-label">
-        <strong>Следующий уровень</strong>
-        <span>Пока недоступен</span>
+        <strong>Next level</strong>
+        <span>Not available yet</span>
       </div>
-      <p className="availability-note">Баллы и ранги пока не начисляются.</p>
+      <p className="availability-note">
+        Earn Stars by completing requests. Ranks are not available yet.
+      </p>
       <h2 className="section-title">Exchange</h2>
       <Rewards />
       <h2 className="section-title">Your rank</h2>
@@ -180,8 +193,8 @@ export function StarsOverview() {
           <TrophyOutlined />
         </span>
         <div>
-          <strong>Участник Qoldau</strong>
-          <p>Помогать можно уже сейчас</p>
+          <strong>Qoldau member</strong>
+          <p>Start helping today</p>
           <div className="rank-track" />
         </div>
       </div>
@@ -190,7 +203,7 @@ export function StarsOverview() {
 }
 export function CommunityLinks() {
   return (
-    <nav className="community-links" aria-label="Сообщество">
+    <nav className="community-links" aria-label="Community">
       <Link to="/stars">
         <StarFilled /> Stars
       </Link>
@@ -198,7 +211,7 @@ export function CommunityLinks() {
         <GiftOutlined /> Wishes
       </Link>
       <Link to="/auctions">
-        <HeartFilled /> Аукционы
+        <HeartFilled /> Auctions
       </Link>
     </nav>
   );

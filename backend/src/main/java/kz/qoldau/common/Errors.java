@@ -20,7 +20,7 @@ public class Errors {
   ResponseEntity<?> unexpected(Exception e) {
     log.error("Unexpected API failure", e);
     return ResponseEntity.internalServerError()
-        .body(Map.of("message", "Внутренняя ошибка сервера. Попробуйте позже"));
+        .body(Map.of("message", "Internal server error. Please try again later"));
   }
 
   @ExceptionHandler(ApiException.class)
@@ -35,7 +35,7 @@ public class Errors {
         .getFieldErrors()
         .forEach(x -> fields.put(x.getField(), x.getDefaultMessage()));
     return ResponseEntity.badRequest()
-        .body(Map.of("message", "Проверьте введённые данные", "fields", fields));
+        .body(Map.of("message", "Please check the form fields", "fields", fields));
   }
 
   @ExceptionHandler({
@@ -43,12 +43,12 @@ public class Errors {
     org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class
   })
   ResponseEntity<?> bad(Exception e) {
-    return ResponseEntity.badRequest().body(Map.of("message", "Неверный формат данных"));
+    return ResponseEntity.badRequest().body(Map.of("message", "Invalid data format"));
   }
 
   @ExceptionHandler(DataIntegrityViolationException.class)
   ResponseEntity<?> duplicate() {
     return ResponseEntity.status(409)
-        .body(Map.of("message", "Такая запись уже существует или нарушает ограничения"));
+        .body(Map.of("message", "This entry already exists or violates a constraint"));
   }
 }

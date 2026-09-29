@@ -13,5 +13,7 @@ public class HelpResponse {
   public Long requestId;
   public Long helperId;
   public String message;
+  public String phone = "";
+  public String email = "";
   public Instant createdAt = Instant.now();
 }

@@ -45,8 +45,8 @@ public class WishController {
   public Wish pledge(@PathVariable Long id) {
     var w = wishes.locked(id).orElseThrow(ApiException::missing);
     var u = current.get();
-    if (w.authorId.equals(u.id)) throw ApiException.conflict("Нельзя поддержать своё желание");
-    if (!w.status.equals("OPEN")) throw ApiException.conflict("Желание уже поддержано");
+    if (w.authorId.equals(u.id)) throw ApiException.conflict("You cannot support your own wish");
+    if (!w.status.equals("OPEN")) throw ApiException.conflict("This wish already has support");
     w.supporterId = u.id;
     w.status = "PLEDGED";
     return w;
@@ -58,7 +58,7 @@ public class WishController {
     var w = wishes.locked(id).orElseThrow(ApiException::missing);
     if (!w.authorId.equals(current.get().id)) throw ApiException.forbidden();
     if (!w.status.equals("PLEDGED"))
-      throw ApiException.conflict("Сначала нужна поддержка участника");
+      throw ApiException.conflict("A member must support this wish first");
     w.status = "FULFILLED";
     return w;
   }

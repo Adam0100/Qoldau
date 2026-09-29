@@ -15,7 +15,7 @@ public class CurrentUser {
   public User get() {
     var a = SecurityContextHolder.getContext().getAuthentication();
     if (a == null || !(a.getPrincipal() instanceof Long))
-      throw new ApiException(org.springframework.http.HttpStatus.UNAUTHORIZED, "Войдите в аккаунт");
+      throw new ApiException(org.springframework.http.HttpStatus.UNAUTHORIZED, "Please sign in");
     return users.findById((Long) a.getPrincipal()).orElseThrow(ApiException::missing);
   }
 }

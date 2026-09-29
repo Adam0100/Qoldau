@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { App, Button, Form, Input, Segmented, Alert } from "antd";
+import { App, Button, Form, Input, Segmented, Alert, Pagination } from "antd";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   SettingOutlined,
@@ -10,8 +10,16 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import { BrandMark, Leafscape, PageHeading, CommunityLinks } from "./design";
-import { api } from "./api";
-import { Field, RequireUser, useSession } from "./shared";
+import { api, RewardsSummary } from "./api";
+import {
+  Field,
+  RequireUser,
+  useSession,
+  useLoad,
+  LoadState,
+  NoData,
+  date,
+} from "./shared";
 export function Auth() {
   const [params] = useSearchParams();
   const [register, setRegister] = useState(params.get("mode") === "register");
@@ -48,13 +56,13 @@ export function Auth() {
       </section>
       <section className="panel auth-form-panel">
         <Link className="back-link" to="/welcome">
-          ← Назад
+          ← Back
         </Link>
         <Segmented
           block
           options={[
-            { label: "Вход", value: 0 },
-            { label: "Регистрация", value: 1 },
+            { label: "Sign in", value: 0 },
+            { label: "Register", value: 1 },
           ]}
           value={register ? 1 : 0}
           onChange={(v) => {
@@ -62,34 +70,34 @@ export function Auth() {
             setError("");
           }}
         />
-        <h2>{register ? "Рады знакомству!" : "С возвращением"}</h2>
+        <h2>{register ? "Nice to meet you!" : "Welcome back"}</h2>
         {error && <Alert type="error" message={error} showIcon />}
         <Form key={String(register)} layout="vertical" onFinish={submit}>
           {register && (
             <>
-              <Field name="name" label="Ваше имя" max={80} />
-              <Field name="city" label="Город" max={100} />
+              <Field name="name" label="Your name" max={80} />
+              <Field name="city" label="City" max={100} />
             </>
           )}
           <Form.Item
             name="email"
             label="Email"
             rules={[
-              { required: true, message: "Введите email" },
-              { type: "email", message: "Неверный email" },
+              { required: true, message: "Enter your email" },
+              { type: "email", message: "Invalid email" },
             ]}
           >
             <Input autoComplete="email" maxLength={254} />
           </Form.Item>
           <Form.Item
             name="password"
-            label="Пароль"
+            label="Password"
             rules={[
-              { required: true, message: "Введите пароль" },
+              { required: true, message: "Enter your password" },
               {
-                min: register ? 10 : 1,
+                min: register ? 6 : 1,
                 max: 64,
-                message: "Пароль: от 10 до 64 символов",
+                message: "Password: 6 to 64 characters",
               },
             ]}
           >
@@ -99,7 +107,7 @@ export function Auth() {
             />
           </Form.Item>
           <Button block type="primary" htmlType="submit" loading={busy}>
-            {register ? "Создать аккаунт" : "Войти"}
+            {register ? "Create account" : "Sign in"}
           </Button>
         </Form>
       </section>
@@ -115,14 +123,16 @@ export function Profile() {
 }
 function ProfileOverview() {
   const { user } = useSession();
+  const [page, setPage] = useState(1);
+  const rewards = useLoad<RewardsSummary>("/me/stars?page=" + (page - 1));
   return (
     <section className="profile-page">
       <div className="profile-toolbar">
-        <span className="sr-only">Мой профиль</span>
+        <span className="sr-only">My profile</span>
         <Link
           className="icon-button"
           to="/profile/settings"
-          aria-label="Настройки профиля"
+          aria-label="Profile settings"
         >
           <SettingOutlined />
         </Link>
@@ -130,15 +140,19 @@ function ProfileOverview() {
       <div className="profile-identity">
         <div className="profile-avatar">{user!.name[0].toUpperCase()}</div>
         <h1>{user!.name}</h1>
-        <p>{user!.city} · Участник Qoldau</p>
+        <p>{user!.city} · Qoldau member</p>
       </div>
-      <div className="profile-stats" aria-label="Статистика пока недоступна">
+      <div className="profile-stats" aria-label="Your activity">
         <div>
-          <strong>—</strong>
+          <strong data-testid="helped-count">
+            {rewards.data?.helpedCount ?? "—"}
+          </strong>
           <span>Helped</span>
         </div>
         <Link to="/stars">
-          <strong>—</strong>
+          <strong data-testid="stars-balance">
+            {rewards.data?.balance ?? "—"}
+          </strong>
           <span>Stars</span>
         </Link>
         <div>
@@ -146,20 +160,18 @@ function ProfileOverview() {
           <span>Rank</span>
         </div>
       </div>
-      <p className="availability-note">
-        Статистика помощи и ранги пока недоступны.
-      </p>
+      <p className="availability-note">Ranks are not available yet.</p>
       <div className="profile-menu">
         <Link className="menu-row" to="/my-requests">
           <FileTextOutlined />
           <strong>My requests</strong>
           <RightOutlined />
         </Link>
-        <button className="menu-row" disabled>
+        <a className="menu-row" href="#help-history">
           <HistoryOutlined />
           <strong>My help history</strong>
-          <small>Скоро</small>
-        </button>
+          <RightOutlined />
+        </a>
         <Link className="menu-row" to="/stars">
           <GiftOutlined />
           <strong>My rewards</strong>
@@ -172,6 +184,29 @@ function ProfileOverview() {
         </Link>
       </div>
       {user!.bio && <p className="profile-bio">{user!.bio}</p>}
+      <section id="help-history">
+        <h2>Completed help</h2>
+        <LoadState {...rewards} retry={rewards.reload} />
+        {rewards.data?.items.map((item) => (
+          <div className="reply" key={item.requestId}>
+            <Link to={"/requests/" + item.requestId}>{item.title}</Link>
+            <p>
+              +{item.stars} Stars · {date(item.completedAt)}
+            </p>
+          </div>
+        ))}
+        {!rewards.loading && !rewards.error && !rewards.data?.items.length && (
+          <NoData text="No completed help yet" />
+        )}
+        <Pagination
+          current={page}
+          total={rewards.data?.total}
+          pageSize={20}
+          showSizeChanger={false}
+          hideOnSinglePage
+          onChange={setPage}
+        />
+      </section>
       <CommunityLinks />
     </section>
   );
@@ -193,7 +228,7 @@ function ProfileForm() {
     try {
       await api("/me", "PUT", values);
       await refresh();
-      message.success("Профиль сохранён");
+      message.success("Profile saved");
     } catch (e) {
       message.error((e as Error).message);
     } finally {
@@ -202,7 +237,7 @@ function ProfileForm() {
   }
   return (
     <>
-      <PageHeading title="Настройки профиля" to="/profile" />
+      <PageHeading title="Profile settings" to="/profile" />
       <div className="panel form-panel">
         <div className="profile-avatar">
           {user!.name.slice(0, 1).toUpperCase()}
@@ -210,13 +245,13 @@ function ProfileForm() {
         <h2>{user!.name}</h2>
         <p>{user!.email}</p>
         <Form layout="vertical" initialValues={user!} onFinish={save}>
-          <Field name="name" label="Имя" max={80} />
-          <Field name="city" label="Город" max={100} />
-          <Form.Item name="bio" label="О себе">
+          <Field name="name" label="Name" max={80} />
+          <Field name="city" label="City" max={100} />
+          <Form.Item name="bio" label="About me">
             <Input.TextArea rows={4} maxLength={1000} />
           </Form.Item>
           <Button type="primary" htmlType="submit" loading={busy}>
-            Сохранить
+            Save
           </Button>
         </Form>
         <Button
@@ -231,7 +266,7 @@ function ProfileForm() {
             }
           }}
         >
-          Выйти из аккаунта
+          Sign out
         </Button>
       </div>
     </>

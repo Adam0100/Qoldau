@@ -57,7 +57,7 @@ export function Stars() {
     try {
       await api("/stars/me", "PUT", v);
       load.reload();
-      message.success("История опубликована");
+      message.success("Story published");
     } catch (e) {
       message.error((e as Error).message);
     } finally {
@@ -72,10 +72,9 @@ export function Stars() {
           <StarsOverview />
         </section>
         <section className="stars-community">
-          <h2 className="section-title">Истории добрых дел</h2>
+          <h2 className="section-title">Stories of kindness</h2>
           <p className="intro">
-            Реальные истории участников Qoldau. Поделитесь тем, что вдохновляет
-            вас помогать.
+            Stories from Qoldau members. Share what inspires you to help.
           </p>
           <LoadState {...load} retry={load.reload} />
           {!load.loading && !load.error && (
@@ -92,23 +91,23 @@ export function Stars() {
                   ))}
                 </div>
               ) : (
-                <NoData text="Пока нет историй. Поделитесь своей." />
+                <NoData text="No stories yet. Share yours." />
               )}
               <Pager page={page} total={load.data?.total} onChange={setPage} />
             </>
           )}
           <div className="panel form-panel">
-            <h2>Расскажите свою историю</h2>
+            <h2>Share your story</h2>
             <RequireUser>
               <Form layout="vertical" onFinish={save}>
                 <Field
                   name="story"
-                  label="Что для вас значит помогать?"
+                  label="What does helping mean to you?"
                   max={2000}
                   area
                 />
                 <Button type="primary" htmlType="submit" loading={busy}>
-                  Опубликовать / обновить
+                  Publish / update
                 </Button>
               </Form>
               <Button
@@ -117,13 +116,13 @@ export function Stars() {
                   try {
                     await api("/stars/me", "DELETE");
                     load.reload();
-                    message.success("История снята с публикации");
+                    message.success("Story unpublished");
                   } catch (e) {
                     message.error((e as Error).message);
                   }
                 }}
               >
-                Снять мою историю с публикации
+                Unpublish my story
               </Button>
             </RequireUser>
           </div>
@@ -145,7 +144,7 @@ export function Wishes() {
       await api(path, "POST", body);
       load.reload();
       if (body) form.resetFields();
-      message.success("Готово");
+      message.success("Done");
     } catch (e) {
       message.error((e as Error).message);
     } finally {
@@ -158,13 +157,13 @@ export function Wishes() {
       <div className="wishes-banner">
         <HeartOutlined />
         <div>
-          <h2>Маленькая мечта. Большая поддержка.</h2>
-          <p>Поможем желаниям сбыться — вместе.</p>
+          <h2>Small dream. Big support.</h2>
+          <p>Make wishes come true together.</p>
         </div>
       </div>
       <p className="intro">
-        Поддержите чьё-то желание. Его автор подтвердит исполнение, когда помощь
-        действительно получена.
+        Support a wish. Its author will confirm fulfilment when help has been
+        received.
       </p>
       <LoadState {...load} retry={load.reload} />
       {!load.loading && !load.error && (
@@ -179,9 +178,9 @@ export function Wishes() {
                   <Tag color={w.status === "FULFILLED" ? "green" : "gold"}>
                     {
                       {
-                        OPEN: "Ищет поддержку",
-                        PLEDGED: "Есть поддержка",
-                        FULFILLED: "Исполнено",
+                        OPEN: "Seeking support",
+                        PLEDGED: "Supported",
+                        FULFILLED: "Fulfilled",
                       }[w.status]
                     }
                   </Tag>
@@ -194,10 +193,10 @@ export function Wishes() {
                         loading={busy}
                         onClick={() => act("/wishes/" + w.id + "/pledge")}
                       >
-                        Поддержать желание
+                        Support wish
                       </Button>
                     ) : (
-                      <Link to="/login">Войти, чтобы поддержать</Link>
+                      <Link to="/login">Sign in to support</Link>
                     ))}
                   {w.status === "PLEDGED" && w.authorId === user?.id && (
                     <Button
@@ -205,38 +204,33 @@ export function Wishes() {
                       type="primary"
                       onClick={() => act("/wishes/" + w.id + "/fulfill")}
                     >
-                      Подтвердить исполнение
+                      Confirm fulfilment
                     </Button>
                   )}
                   {w.supporterId === user?.id && (
-                    <p className="subtle">Вы поддержали это желание</p>
+                    <p className="subtle">You supported this wish</p>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <NoData text="Пока нет желаний. О чём мечтаете вы?" />
+            <NoData text="No wishes yet. What is your wish?" />
           )}
           <Pager page={page} total={load.data?.total} onChange={setPage} />
         </>
       )}
       <div className="panel form-panel">
-        <h2>Поделиться желанием</h2>
+        <h2>Share a wish</h2>
         <RequireUser>
           <Form
             form={form}
             layout="vertical"
             onFinish={(v) => act("/wishes", v)}
           >
-            <Field name="title" label="Моё желание" />
-            <Field
-              name="description"
-              label="Расскажите подробнее"
-              max={3000}
-              area
-            />
+            <Field name="title" label="My wish" />
+            <Field name="description" label="Tell us more" max={3000} area />
             <Button type="primary" htmlType="submit" loading={busy}>
-              Опубликовать
+              Publish
             </Button>
           </Form>
         </RequireUser>
@@ -249,11 +243,11 @@ export function Auctions() {
   const load = useLoad<Page<Lot>>("/auctions?page=" + (page - 1));
   return (
     <>
-      <p className="eyebrow">ОСОБЕННЫЕ ВЕЩИ · ДОБРЫЕ ДЕЛА</p>
+      <p className="eyebrow">SPECIAL ITEMS · GOOD DEEDS</p>
       <div className="section-heading">
-        <h1>Благотворительные аукционы</h1>
+        <h1>Charity auctions</h1>
         <Link to="/auctions/new">
-          <Button type="primary">Создать лот</Button>
+          <Button type="primary">Create lot</Button>
         </Link>
       </div>
       <AuctionNotice />
@@ -270,21 +264,21 @@ export function Auctions() {
                 >
                   <div className="lot-art">
                     <HeartOutlined />
-                    <span>ДОБРО СО СМЫСЛОМ</span>
+                    <span>GIVING WITH PURPOSE</span>
                   </div>
                   <Tag>{lotStatus(l)}</Tag>
                   <h2>{l.title}</h2>
                   <p>{l.celebrity}</p>
                   <p className="price">{money(l.currentPrice)}</p>
                   <div className="card-bottom">
-                    <span>До {date(l.endsAt)}</span>
+                    <span>Until {date(l.endsAt)}</span>
                     <ArrowRightOutlined />
                   </div>
                 </Link>
               ))}
             </div>
           ) : (
-            <NoData text="Лотов пока нет. Все опубликованные лоты появятся здесь." />
+            <NoData text="No lots yet. Published lots will appear here." />
           )}
           <Pager page={page} total={load.data?.total} onChange={setPage} />
         </>
@@ -298,17 +292,17 @@ function AuctionNotice() {
       className="auction-notice"
       type="info"
       showIcon
-      message="Учебные аукционы — без оплаты"
-      description="Принадлежность вещей знаменитостям и благотворительные получатели указываются авторами и пока не проверяются. Ставки не списывают деньги."
+      message="Payments are not available"
+      description="Celebrity ownership and charitable recipients are stated by sellers and are not verified. Bids do not charge money."
     />
   );
 }
 function lotStatus(l: Lot) {
   return l.closed || Date.now() >= Date.parse(l.endsAt)
-    ? "Завершён"
+    ? "Ended"
     : Date.now() < Date.parse(l.startsAt)
-      ? "Скоро начнётся"
-      : "Принимаем ставки";
+      ? "Starting soon"
+      : "Accepting bids";
 }
 export function NewAuction() {
   return (
@@ -339,44 +333,44 @@ function LotForm() {
   return (
     <>
       <Link className="back-link" to="/auctions">
-        ← К аукционам
+        ← Back to auctions
       </Link>
-      <h1>Новая история вещи</h1>
+      <h1>Create a new lot</h1>
       <AuctionNotice />
       <div className="panel form-panel">
         <Form layout="vertical" onFinish={submit}>
-          <Field name="title" label="Название лота" />
+          <Field name="title" label="Lot title" />
           <Field
             name="description"
-            label="Описание и происхождение вещи"
+            label="Description and provenance"
             max={5000}
             area
           />
-          <Field name="celebrity" label="Имя знаменитости (заявление автора)" />
-          <Field name="charity" label="Благотворительная цель" max={200} />
+          <Field name="celebrity" label="Celebrity name (seller claim)" />
+          <Field name="charity" label="Charitable purpose" max={200} />
           <Form.Item
             name="startPrice"
-            label="Стартовая цена, ₸"
-            rules={[{ required: true, message: "Укажите цену" }]}
+            label="Starting price, ₸"
+            rules={[{ required: true, message: "Enter a price" }]}
           >
             <InputNumber min={0.01} max={999999999999.99} precision={2} />
           </Form.Item>
           <Form.Item
             name="startsAt"
-            label="Начало (ваше местное время)"
-            rules={[{ required: true, message: "Укажите время" }]}
+            label="Start (your local time)"
+            rules={[{ required: true, message: "Enter a time" }]}
           >
             <Input type="datetime-local" />
           </Form.Item>
           <Form.Item
             name="endsAt"
-            label="Окончание (ваше местное время)"
-            rules={[{ required: true, message: "Укажите время" }]}
+            label="End (your local time)"
+            rules={[{ required: true, message: "Enter a time" }]}
           >
             <Input type="datetime-local" />
           </Form.Item>
           <Button type="primary" htmlType="submit" loading={busy}>
-            Опубликовать лот
+            Publish lot
           </Button>
         </Form>
       </div>
@@ -403,7 +397,7 @@ export function AuctionDetail() {
       await api("/auctions/" + id + "/bids", "POST", v);
       load.reload();
       history.reload();
-      message.success("Ставка принята");
+      message.success("Bid accepted");
     } catch (e) {
       message.error((e as Error).message);
       load.reload();
@@ -415,7 +409,7 @@ export function AuctionDetail() {
   return (
     <>
       <Link className="back-link" to="/auctions">
-        ← К аукционам
+        ← Back to auctions
       </Link>
       <AuctionNotice />
       {!l && <LoadState {...load} retry={load.reload} />}{" "}
@@ -426,9 +420,9 @@ export function AuctionDetail() {
           <h1>{l.title}</h1>
           <p className="intro">{l.celebrity}</p>
           <p className="body-text">{l.description}</p>
-          <p>Цель: {l.charity}</p>
+          <p>Purpose: {l.charity}</p>
           <p>
-            Начало: {date(l.startsAt)} · Окончание: {date(l.endsAt)}
+            Start: {date(l.startsAt)} · End: {date(l.endsAt)}
           </p>
           <p className="price">{money(l.currentPrice)}</p>
           {l.closed ? (
@@ -436,28 +430,28 @@ export function AuctionDetail() {
               type="success"
               message={
                 l.winnerId
-                  ? "Победитель: участник №" +
+                  ? "Winner: member #" +
                     l.winnerId +
-                    (l.winnerId === user?.id ? " — это вы!" : "")
-                  : "Аукцион завершён без ставок"
+                    (l.winnerId === user?.id ? " — that is you!" : "")
+                  : "Auction ended without bids"
               }
             />
           ) : Date.now() >= Date.parse(l.endsAt) ? (
-            <Alert message="Срок завершён. Определяем победителя…" />
+            <Alert message="Bidding has ended. Determining the winner…" />
           ) : Date.now() < Date.parse(l.startsAt) ? (
-            <Alert message="Ставки откроются в указанное время" />
+            <Alert message="Bidding opens at the scheduled time" />
           ) : l.sellerId === user?.id ? (
-            <Alert message="Это ваш лот. Ставки доступны другим участникам." />
+            <Alert message="This is your lot. Other members can place bids." />
           ) : (
             <RequireUser>
               <Form layout="vertical" onFinish={bid}>
                 <Form.Item
                   name="amount"
-                  label="Ваша ставка, ₸"
-                  rules={[{ required: true, message: "Введите сумму" }]}
+                  label="Your bid, ₸"
+                  rules={[{ required: true, message: "Enter an amount" }]}
                 >
                   <InputNumber
-                    aria-label="Ваша ставка"
+                    aria-label="Your bid"
                     min={Number(l.currentPrice) + 0.01}
                     max={999999999999.99}
                     precision={2}
@@ -469,25 +463,25 @@ export function AuctionDetail() {
                   htmlType="submit"
                   disabled={!!load.error}
                 >
-                  Сделать ставку
+                  Place bid
                 </Button>
               </Form>
             </RequireUser>
           )}
-          <h2>Последние ставки</h2>
+          <h2>Latest bids</h2>
           {history.error && <Alert message={history.error} type="error" />}
           {history.data?.items.length ? (
             <div>
               {history.data.items.map((b) => (
                 <div className="bid-row" key={b.id}>
-                  <span>Участник №{b.bidderId}</span>
+                  <span>Member #{b.bidderId}</span>
                   <strong>{money(b.amount)}</strong>
                   <small>{date(b.createdAt)}</small>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="subtle">Ставок пока нет</p>
+            <p className="subtle">No bids yet</p>
           )}
         </div>
       )}

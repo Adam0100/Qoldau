@@ -51,18 +51,18 @@ test("community modules and a second member helping and bidding", async ({
     const helperPage = await second.newPage();
     await helperPage.goto("/requests/" + requestId);
     await helperPage
-      .getByRole("button", { name: "Хочу помочь", exact: true })
+      .getByRole("button", { name: "Offer help", exact: true })
       .click();
     await helperPage
-      .getByLabel("Как вы можете помочь? Оставьте способ связи, если хотите.", {
+      .getByLabel("Message to the author", {
         exact: true,
       })
       .fill("Тестовый отклик участника");
     await helperPage
-      .getByRole("button", { name: "Отправить отклик", exact: true })
+      .getByRole("button", { name: "Send offer", exact: true })
       .click();
     await expect(
-      helperPage.getByText("Ваш отклик отправлен", { exact: true }),
+      helperPage.getByText("Your offer has been sent", { exact: true }),
     ).toBeVisible();
     await page.goto("/requests/" + requestId);
     await expect(
@@ -71,24 +71,22 @@ test("community modules and a second member helping and bidding", async ({
 
     await page.goto("/stars");
     await page
-      .getByLabel("Что для вас значит помогать?", { exact: true })
+      .getByLabel("What does helping mean to you?", { exact: true })
       .fill("История браузерной проверки");
     await page
-      .getByRole("button", { name: "Опубликовать / обновить", exact: true })
+      .getByRole("button", { name: "Publish / update", exact: true })
       .click();
     await expect(
-      page.getByText("История опубликована", { exact: true }),
+      page.getByText("Story published", { exact: true }),
     ).toBeVisible();
 
     await page.goto("/wishes");
     const wishTitle = "Browser wish " + randomUUID().slice(0, 8);
-    await page.getByLabel("Моё желание", { exact: true }).fill(wishTitle);
+    await page.getByLabel("My wish", { exact: true }).fill(wishTitle);
     await page
-      .getByLabel("Расскажите подробнее", { exact: true })
+      .getByLabel("Tell us more", { exact: true })
       .fill("Тестовая мечта");
-    await page
-      .getByRole("button", { name: "Опубликовать", exact: true })
-      .click();
+    await page.getByRole("button", { name: "Publish", exact: true }).click();
     await expect(
       page.getByRole("heading", { name: wishTitle, exact: true }),
     ).toBeVisible();
@@ -104,23 +102,23 @@ test("community modules and a second member helping and bidding", async ({
       has: page.getByRole("heading", { name: wishTitle, exact: true }),
     });
     await card
-      .getByRole("button", { name: "Подтвердить исполнение", exact: true })
+      .getByRole("button", { name: "Confirm fulfilment", exact: true })
       .click();
-    await expect(card.getByText("Исполнено", { exact: true })).toBeVisible();
+    await expect(card.getByText("Fulfilled", { exact: true })).toBeVisible();
 
     await page.goto("/auctions/new");
     const title = "Browser auction " + randomUUID().slice(0, 8);
-    await page.getByLabel("Название лота", { exact: true }).fill(title);
+    await page.getByLabel("Lot title", { exact: true }).fill(title);
     await page
-      .getByLabel("Описание и происхождение вещи", { exact: true })
+      .getByLabel("Description and provenance", { exact: true })
       .fill("Учебный лот, не настоящий предмет");
     await page
-      .getByLabel("Имя знаменитости (заявление автора)", { exact: true })
+      .getByLabel("Celebrity name (seller claim)", { exact: true })
       .fill("Тестовый участник");
     await page
-      .getByLabel("Благотворительная цель", { exact: true })
+      .getByLabel("Charitable purpose", { exact: true })
       .fill("Учебная проверка");
-    await page.getByLabel("Стартовая цена, ₸", { exact: true }).fill("100");
+    await page.getByLabel("Starting price, ₸", { exact: true }).fill("100");
     const local = (time: number) => {
       const d = new Date(time);
       return new Date(time - d.getTimezoneOffset() * 60000)
@@ -128,29 +126,29 @@ test("community modules and a second member helping and bidding", async ({
         .slice(0, 16);
     };
     await page
-      .getByLabel("Начало (ваше местное время)", { exact: true })
+      .getByLabel("Start (your local time)", { exact: true })
       .fill(local(Date.now() - 120000));
     await page
-      .getByLabel("Окончание (ваше местное время)", { exact: true })
+      .getByLabel("End (your local time)", { exact: true })
       .fill(local(Date.now() + 3600000));
     await page
-      .getByRole("button", { name: "Опубликовать лот", exact: true })
+      .getByRole("button", { name: "Publish lot", exact: true })
       .click();
     await expect(
       page.getByRole("heading", { name: title, exact: true }),
     ).toBeVisible();
     await helperPage.goto(page.url());
     await helperPage
-      .getByRole("spinbutton", { name: "Ваша ставка", exact: true })
+      .getByRole("spinbutton", { name: "Your bid", exact: true })
       .fill("200");
     await helperPage
-      .getByRole("button", { name: "Сделать ставку", exact: true })
+      .getByRole("button", { name: "Place bid", exact: true })
       .click();
     await expect(
-      helperPage.getByText("Ставка принята", { exact: true }),
+      helperPage.getByText("Bid accepted", { exact: true }),
     ).toBeVisible();
     await expect(
-      helperPage.getByText("Участник №" + helper, { exact: true }),
+      helperPage.getByText("Member #" + helper, { exact: true }),
     ).toBeVisible();
   } finally {
     await second.close();

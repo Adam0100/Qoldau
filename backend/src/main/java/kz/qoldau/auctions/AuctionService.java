@@ -21,12 +21,12 @@ public class AuctionService {
     var lot = lots.locked(lotId).orElseThrow(ApiException::missing);
     // Check the clock AFTER acquiring the lock: queued requests cannot bid after the deadline.
     var now = Instant.now();
-    if (lot.closed || !now.isBefore(lot.endsAt)) throw ApiException.conflict("Аукцион завершён");
-    if (now.isBefore(lot.startsAt)) throw ApiException.conflict("Аукцион ещё не начался");
+    if (lot.closed || !now.isBefore(lot.endsAt)) throw ApiException.conflict("Auction has ended");
+    if (now.isBefore(lot.startsAt)) throw ApiException.conflict("Auction has not started");
     if (lot.sellerId.equals(userId))
-      throw ApiException.conflict("Нельзя делать ставку на свой лот");
+      throw ApiException.conflict("You cannot bid on your own lot");
     if (amount.compareTo(lot.currentPrice) <= 0)
-      throw ApiException.conflict("Ставка должна превышать текущую цену");
+      throw ApiException.conflict("Your bid must exceed the current price");
     var b = new Bid();
     b.lotId = lotId;
     b.bidderId = userId;

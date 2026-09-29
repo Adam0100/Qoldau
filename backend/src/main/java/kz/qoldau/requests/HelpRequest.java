@@ -16,5 +16,8 @@ public class HelpRequest {
   public String city;
   public String category;
   public String status = "OPEN";
+  public Long selectedResponseId;
+  public int rewardStars = 5;
+  public Instant completedAt;
   public Instant createdAt = Instant.now();
 }

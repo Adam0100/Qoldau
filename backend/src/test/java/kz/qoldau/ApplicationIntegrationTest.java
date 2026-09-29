@@ -32,6 +32,110 @@ class ApplicationIntegrationTest {
   @Autowired AuctionService auctions;
   @Autowired Lots lots;
   @Autowired Bids bids;
+  @Autowired kz.qoldau.stars.StarAwards awards;
+
+  Map<String, String> requestBody() {
+    return Map.of("title", "Help needed", "description", "Keep user text unchanged: Помогите",
+        "city", "Almaty", "category", "EVERYDAY", "status", "OPEN");
+  }
+
+  @Test
+  void contactsSelectionAndConcurrentCompletion() throws Exception {
+    var author = account(); var helper = account(); var other = account();
+    long id = postJson("/api/requests", requestBody(), author, 200).get("id").asLong();
+    String url = "/api/requests/" + id;
+    postJson(url + "/responses", Map.of("message", "No contact", "phone", " ", "email", " "), helper, 400);
+    postJson(url + "/responses", Map.of("message", "Invalid", "phone", "------"), helper, 400);
+    postJson(url + "/responses", Map.of("message", "Invalid", "email", "bad"), helper, 400);
+    postJson(url + "/complete", null, author, 409);
+    var response = postJson(url + "/responses", Map.of("message", "Помогу", "phone", "+7 700 123 4567"), helper, 200);
+    long responseId = response.get("id").asLong();
+    String offerUrl = url + "/responses/" + responseId;
+    mvc.perform(get(offerUrl).session(author.session())).andExpect(status().isOk())
+        .andExpect(jsonPath("$.phone").value("+7 700 123 4567"))
+        .andExpect(jsonPath("$.message").value("Помогу"));
+    mvc.perform(get(offerUrl).session(helper.session())).andExpect(status().isOk());
+    mvc.perform(get(offerUrl).session(other.session())).andExpect(status().isForbidden());
+    mvc.perform(get(url + "/responses").session(other.session())).andExpect(status().isForbidden());
+    mvc.perform(get(offerUrl)).andExpect(status().isUnauthorized());
+    mvc.perform(get(url)).andExpect(jsonPath("$.phone").doesNotExist()).andExpect(jsonPath("$.email").doesNotExist());
+    var second = postJson(url + "/responses", Map.of("message", "Email only", "email", "other@example.test"), other, 200);
+    mvc.perform(get(url + "/responses").session(helper.session())).andExpect(jsonPath("$.length()").value(1))
+        .andExpect(jsonPath("$[0].id").value(responseId));
+    mvc.perform(get(url + "/responses/" + second.get("id").asLong()).session(helper.session()))
+        .andExpect(status().isForbidden());
+    postJson(offerUrl + "/select", null, helper, 403);
+    postJson(offerUrl + "/select", null, other, 403);
+    long otherRequest = postJson("/api/requests", requestBody(), author, 200).get("id").asLong();
+    postJson("/api/requests/" + otherRequest + "/responses/" + responseId + "/select", null, author, 404);
+    assertEquals("IN_PROGRESS", postJson(offerUrl + "/select", null, author, 200).get("status").asText());
+    postJson(offerUrl + "/select", null, author, 409);
+    postJson(url + "/responses", Map.of("message", "Late", "email", "late@example.test"), account(), 409);
+    postJson(url + "/complete", null, helper, 403);
+    postJson(url + "/complete", null, other, 403);
+    var gate = new CountDownLatch(1);
+    try (var pool = Executors.newFixedThreadPool(2)) {
+      Callable<JsonNode> confirm = () -> { gate.await(); return postJson(url + "/complete", null, author, 200); };
+      var first = pool.submit(confirm); var duplicate = pool.submit(confirm); gate.countDown();
+      assertEquals("COMPLETED", first.get(20, TimeUnit.SECONDS).get("status").asText());
+      assertEquals("COMPLETED", duplicate.get(20, TimeUnit.SECONDS).get("status").asText());
+    }
+    postJson(url + "/complete", null, author, 200);
+    assertEquals(1, awards.countByRequestId(id));
+    assertEquals(5, awards.balance(helper.id()));
+    assertEquals(0, awards.balance(author.id()));
+    assertEquals(0, awards.balance(other.id()));
+    mvc.perform(get("/api/me/stars").session(helper.session())).andExpect(jsonPath("$.balance").value(5))
+        .andExpect(jsonPath("$.helpedCount").value(1)).andExpect(jsonPath("$.items[0].requestId").value(id));
+    postJson(url + "/cancel", null, author, 409);
+    mvc.perform(put(url).session(author.session()).with(csrf()).contentType("application/json")
+        .content(json.writeValueAsString(requestBody()))).andExpect(status().isConflict());
+  }
+
+  @Test
+  void cancelledRequestsCannotAwardStarsOrReopen() throws Exception {
+    var author = account(); var helper = account();
+    long id = postJson("/api/requests", requestBody(), author, 200).get("id").asLong();
+    String url = "/api/requests/" + id;
+    var offer = postJson(url + "/responses", Map.of("message", "Ready", "email", "helper@example.test"), helper, 200);
+    postJson(url + "/responses/" + offer.get("id").asLong() + "/select", null, author, 200);
+    postJson(url + "/cancel", null, helper, 403);
+    postJson(url + "/cancel", null, author, 200);
+    postJson(url + "/complete", null, author, 409);
+    postJson(url + "/responses", Map.of("message", "Late", "email", "late@example.test"), account(), 409);
+    mvc.perform(put(url).session(author.session()).with(csrf()).contentType("application/json")
+        .content(json.writeValueAsString(requestBody()))).andExpect(status().isConflict());
+    assertEquals(0, awards.countByRequestId(id));
+    assertEquals(0, awards.balance(helper.id()));
+  }
+
+  @Test
+  void sixCharacterPasswordAcceptedAndFiveRejected() throws Exception {
+    String email = UUID.randomUUID() + "@example.test";
+    postJson("/api/auth/register", Map.of("email", email, "password", "12345", "name", "Member", "city", "City"), null, 400);
+    postJson("/api/auth/register", Map.of("email", email, "password", "123456", "name", "Member", "city", "City"), null, 200);
+    postJson("/api/auth/login", Map.of("email", email, "password", "123456"), null, 200);
+  }
+
+  @Test
+  void completionRollsBackWhenAwardCannotBeInserted() throws Exception {
+    var author = account(); var helper = account();
+    long id = postJson("/api/requests", requestBody(), author, 200).get("id").asLong();
+    String url = "/api/requests/" + id;
+    var offer = postJson(url + "/responses", Map.of("message", "Ready", "email", "helper@example.test"), helper, 200);
+    postJson(url + "/responses/" + offer.get("id").asLong() + "/select", null, author, 200);
+    var conflict = new kz.qoldau.stars.StarAward();
+    conflict.requestId = id; conflict.helperId = helper.id(); conflict.amount = 5;
+    awards.saveAndFlush(conflict);
+    try {
+      postJson(url + "/complete", null, author, 409);
+      mvc.perform(get(url)).andExpect(jsonPath("$.status").value("IN_PROGRESS"))
+          .andExpect(jsonPath("$.completedAt").isEmpty());
+      assertEquals(1, awards.countByRequestId(id));
+    } finally { awards.deleteById(conflict.id); }
+    postJson(url + "/complete", null, author, 200);
+    assertEquals(5, awards.balance(helper.id()));
+  }
 
   record Account(long id, MockHttpSession session) {}
 
@@ -135,11 +239,12 @@ class ApplicationIntegrationTest {
                 .contentType("application/json")
                 .content(json.writeValueAsString(body)))
         .andExpect(status().isForbidden());
-    postJson("/api/requests/" + id + "/responses", Map.of("message", "I can help"), author, 409);
-    postJson("/api/requests/" + id + "/responses", Map.of("message", "I can help"), helper, 200);
-    postJson("/api/requests/" + id + "/responses", Map.of("message", "Again"), helper, 409);
+    postJson("/api/requests/" + id + "/responses", Map.of("message", "I can help", "email", "helper@example.test"), author, 409);
+    postJson("/api/requests/" + id + "/responses", Map.of("message", "I can help", "email", "helper@example.test"), helper, 200);
+    postJson("/api/requests/" + id + "/responses", Map.of("message", "Again", "email", "helper@example.test"), helper, 409);
     mvc.perform(get("/api/requests/" + id + "/responses").session(helper.session()))
-        .andExpect(status().isForbidden());
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(1));
     mvc.perform(get("/api/requests/" + id + "/responses").session(author.session()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].message").value("I can help"));
@@ -152,7 +257,7 @@ class ApplicationIntegrationTest {
                 .contentType("application/json")
                 .content(json.writeValueAsString(closed)))
         .andExpect(status().isOk());
-    postJson("/api/requests/" + id + "/responses", Map.of("message", "Late"), account(), 409);
+    postJson("/api/requests/" + id + "/responses", Map.of("message", "Late", "email", "helper@example.test"), account(), 409);
   }
 
   @Test

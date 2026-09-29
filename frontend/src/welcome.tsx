@@ -20,7 +20,7 @@ export default function Welcome() {
           <Button block>Log in</Button>
         </Link>
         <Link className="welcome-browse" to="/requests">
-          Посмотреть просьбы
+          Browse requests
         </Link>
       </div>
     </section>

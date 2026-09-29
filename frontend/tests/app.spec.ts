@@ -10,45 +10,43 @@ test("real registration, request, profile, navigation and responsive layout", as
     Math.random().toString(36).slice(2) +
     "@example.test";
   await page.goto("/login");
-  await page.getByText("Регистрация", { exact: true }).click();
-  await page.getByLabel("Ваше имя", { exact: true }).fill("Browser member");
-  await page.getByLabel("Город", { exact: true }).fill("Алматы");
+  await page.getByText("Register", { exact: true }).click();
+  await page.getByLabel("Your name", { exact: true }).fill("Browser member");
+  await page.getByLabel("City", { exact: true }).fill("Алматы");
   await page.getByLabel("Email", { exact: true }).fill(email);
-  await page.getByLabel("Пароль", { exact: true }).fill(randomUUID());
+  await page.getByLabel("Password", { exact: true }).fill(randomUUID());
   await page
-    .getByRole("button", { name: "Создать аккаунт", exact: true })
+    .getByRole("button", { name: "Create account", exact: true })
     .click();
   await expect(
     page.getByRole("heading", { name: "Nearby requests" }),
   ).toBeVisible();
   await page.goto("/new");
   await page
-    .getByLabel("Название просьбы", { exact: true })
+    .getByLabel("Request title", { exact: true })
     .fill("Проверка браузером");
   await page
-    .getByLabel("Подробности", { exact: true })
+    .getByLabel("Details", { exact: true })
     .fill("Тестовая просьба для проверки реального API");
-  await page
-    .getByRole("button", { name: "Опубликовать просьбу", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Post request", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Проверка браузером", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "Отклики", exact: true }),
+    page.getByRole("heading", { name: "Offers", exact: true }),
   ).toBeVisible();
   await page.goto("/profile");
   await page.getByRole("link", { name: /Settings/ }).click();
-  await expect(page.getByLabel("Имя", { exact: true })).toHaveValue(
+  await expect(page.getByLabel("Name", { exact: true })).toHaveValue(
     "Browser member",
   );
-  await page.getByLabel("О себе", { exact: true }).fill("Проверка сохранения");
-  await page.getByRole("button", { name: "Сохранить", exact: true }).click();
-  await expect(
-    page.getByText("Профиль сохранён", { exact: true }),
-  ).toBeVisible();
+  await page
+    .getByLabel("About me", { exact: true })
+    .fill("Проверка сохранения");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByText("Profile saved", { exact: true })).toBeVisible();
   await page.reload();
-  await expect(page.getByLabel("О себе", { exact: true })).toHaveValue(
+  await expect(page.getByLabel("About me", { exact: true })).toHaveValue(
     "Проверка сохранения",
   );
   await page.goto("/");
@@ -65,7 +63,7 @@ test("real registration, request, profile, navigation and responsive layout", as
   });
   await page.goto("/map");
   await expect(
-    page.getByText("Карта пока не подключена.", { exact: false }),
+    page.getByText("The map is not connected yet.", { exact: false }),
   ).toBeVisible();
   await page.goto("/messages");
   await expect(

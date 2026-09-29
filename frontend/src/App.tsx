@@ -33,7 +33,7 @@ import Welcome from "./welcome";
 const navigation = [
   { to: "/", label: "Home", icon: <HomeFilled /> },
   { to: "/map", label: "Map", icon: <EnvironmentOutlined /> },
-  { to: "/new", label: "Создать просьбу", icon: <PlusOutlined /> },
+  { to: "/new", label: "Create request", icon: <PlusOutlined /> },
   { to: "/messages", label: "Messages", icon: <MessageOutlined /> },
   { to: "/profile", label: "Profile", icon: <UserOutlined /> },
 ];
@@ -102,7 +102,7 @@ export default function App() {
             <p className="brand-caption">Help today. Bigger tomorrow.</p>
             <nav className="side-main-nav">{navItems()}</nav>
             <div className="side-community">
-              <p>Сообщество</p>
+              <p>Community</p>
               <NavLink to="/stars">
                 <StarFilled />
                 Qoldau Stars
@@ -113,15 +113,15 @@ export default function App() {
               </NavLink>
               <NavLink to="/auctions">
                 <HeartOutlined />
-                Аукционы
+                Auctions
               </NavLink>
             </div>
             <div className="sidebar-note">
               <BrandMark />
               <p>
-                Большие перемены
+                Big changes
                 <br />
-                начинаются с маленькой помощи.
+                start with a little help.
               </p>
             </div>
             <Link className="side-account" to={user ? "/profile" : "/login"}>
@@ -129,8 +129,8 @@ export default function App() {
                 {user?.name[0] || <UserOutlined />}
               </span>
               <span>
-                {user?.name || "Войти в Qoldau"}
-                <small>{user?.city || "Будем помогать вместе"}</small>
+                {user?.name || "Sign in to Qoldau"}
+                <small>{user?.city || "Let us help together"}</small>
               </span>
             </Link>
           </aside>
@@ -138,9 +138,9 @@ export default function App() {
         <div className="main-shell">
           {!standalone && (
             <header className="desktop-topbar">
-              <span>Каждый добрый поступок имеет значение</span>
+              <span>Every act of kindness matters</span>
               <Link to={user ? "/profile" : "/login"}>
-                <UserOutlined /> {user?.name || "Войти"}
+                <UserOutlined /> {user?.name || "Sign in"}
               </Link>
             </header>
           )}
@@ -156,7 +156,7 @@ export default function App() {
                 className="global-alert"
                 message={error}
                 type="warning"
-                action={<Button onClick={refresh}>Повторить</Button>}
+                action={<Button onClick={refresh}>Retry</Button>}
               />
             )}
             {!ready ? (
@@ -186,8 +186,8 @@ export default function App() {
                   path="*"
                   element={
                     <div className="panel">
-                      <h1>Страница не найдена</h1>
-                      <Link to="/requests">К просьбам</Link>
+                      <h1>Page not found</h1>
+                      <Link to="/requests">Back to requests</Link>
                     </div>
                   }
                 />
@@ -196,7 +196,7 @@ export default function App() {
           </main>
         </div>
         {!standalone && (
-          <nav className="bottom-nav" aria-label="Основная навигация">
+          <nav className="bottom-nav" aria-label="Main navigation">
             {navItems()}
           </nav>
         )}
@@ -210,13 +210,13 @@ function Messages() {
       <PageHeading title="Messages" />
       <div className="placeholder panel">
         <MessageOutlined />
-        <h2>Здесь начнётся разговор</h2>
+        <h2>Conversations start here</h2>
         <p>
-          Личные чаты пока не подключены. Автор просьбы видит настоящие отклики
-          на странице своей просьбы.
+          Private chats are not connected yet. Request authors can read offers
+          on their request page.
         </p>
         <Link to="/requests">
-          <Button type="primary">Перейти к просьбам</Button>
+          <Button type="primary">Browse requests</Button>
         </Link>
       </div>
     </>

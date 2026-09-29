@@ -28,7 +28,7 @@ export async function api<T = any>(
     });
   } catch {
     throw new ApiError(
-      "Не удалось связаться с сервером. Проверьте, запущен ли backend.",
+      "Unable to reach the server. Please try again later.",
       0,
     );
   }
@@ -36,7 +36,7 @@ export async function api<T = any>(
     response.status === 204 ? null : await response.json().catch(() => null);
   if (!response.ok) {
     if (response.status === 403) csrf = undefined;
-    throw new ApiError(data?.message || "Ошибка сервера", response.status);
+    throw new ApiError(data?.message || "Server error", response.status);
   }
   if (path === "/auth/logout" || path === "/auth/login") csrf = undefined;
   return data;
@@ -49,6 +49,9 @@ export type User = {
   bio: string;
 };
 export type Request = {
+  selectedResponseId: number | null;
+  rewardStars: number;
+  completedAt: string | null;
   id: number;
   authorId: number;
   title: string;
@@ -57,6 +60,27 @@ export type Request = {
   category: string;
   status: string;
   createdAt: string;
+};
+export type Offer = {
+  id: number;
+  helperId: number;
+  name: string;
+  message: string;
+  phone: string;
+  email: string;
+  status: string;
+  createdAt: string;
+};
+export type RewardsSummary = {
+  balance: number;
+  helpedCount: number;
+  total: number;
+  items: {
+    requestId: number;
+    title: string;
+    stars: number;
+    completedAt: string;
+  }[];
 };
 export type Lot = {
   id: number;
