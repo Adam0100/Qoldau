@@ -8,6 +8,6 @@ try {
  if ($LASTEXITCODE -ne 0) { throw 'Start PostgreSQL with database.ps1 first' }
  if ($exists -ne '1') { & "$bin\createdb.exe" -h localhost -p 5433 -U qoldau qoldau_test }
 } finally { Remove-Item Env:\PGPASSWORD }
-& "$PSScriptRoot\mvnw.cmd" -B -ntp test
+& "$PSScriptRoot\mvnw.cmd" -B -ntp test @args
 exit $LASTEXITCODE
 

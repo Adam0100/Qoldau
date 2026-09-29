@@ -49,7 +49,7 @@ test("community modules and a second member helping and bidding", async ({
     expect(request.ok()).toBeTruthy();
     const requestId = (await request.json()).id;
     const helperPage = await second.newPage();
-    await helperPage.goto("/#/requests/" + requestId);
+    await helperPage.goto("/requests/" + requestId);
     await helperPage
       .getByRole("button", { name: "Хочу помочь", exact: true })
       .click();
@@ -64,12 +64,12 @@ test("community modules and a second member helping and bidding", async ({
     await expect(
       helperPage.getByText("Ваш отклик отправлен", { exact: true }),
     ).toBeVisible();
-    await page.goto("/#/requests/" + requestId);
+    await page.goto("/requests/" + requestId);
     await expect(
       page.getByText("Тестовый отклик участника", { exact: true }),
     ).toBeVisible();
 
-    await page.goto("/#/stars");
+    await page.goto("/stars");
     await page
       .getByLabel("Что для вас значит помогать?", { exact: true })
       .fill("История браузерной проверки");
@@ -80,7 +80,7 @@ test("community modules and a second member helping and bidding", async ({
       page.getByText("История опубликована", { exact: true }),
     ).toBeVisible();
 
-    await page.goto("/#/wishes");
+    await page.goto("/wishes");
     const wishTitle = "Browser wish " + randomUUID().slice(0, 8);
     await page.getByLabel("Моё желание", { exact: true }).fill(wishTitle);
     await page
@@ -108,7 +108,7 @@ test("community modules and a second member helping and bidding", async ({
       .click();
     await expect(card.getByText("Исполнено", { exact: true })).toBeVisible();
 
-    await page.goto("/#/auctions/new");
+    await page.goto("/auctions/new");
     const title = "Browser auction " + randomUUID().slice(0, 8);
     await page.getByLabel("Название лота", { exact: true }).fill(title);
     await page

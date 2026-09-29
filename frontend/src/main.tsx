@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { ConfigProvider, App as AntApp } from "antd";
 import ruRU from "antd/locale/ru_RU";
-import { HashRouter } from "react-router-dom";
+import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import "./style.css";
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -24,9 +24,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       }}
     >
       <AntApp>
-        <HashRouter>
+        <BrowserRouter>
           <App />
-        </HashRouter>
+        </BrowserRouter>
       </AntApp>
     </ConfigProvider>
   </React.StrictMode>,

@@ -9,7 +9,7 @@ test("real registration, request, profile, navigation and responsive layout", as
     "-" +
     Math.random().toString(36).slice(2) +
     "@example.test";
-  await page.goto("/#/login");
+  await page.goto("/login");
   await page.getByText("Регистрация", { exact: true }).click();
   await page.getByLabel("Ваше имя", { exact: true }).fill("Browser member");
   await page.getByLabel("Город", { exact: true }).fill("Алматы");
@@ -21,7 +21,7 @@ test("real registration, request, profile, navigation and responsive layout", as
   await expect(
     page.getByRole("heading", { name: "Nearby requests" }),
   ).toBeVisible();
-  await page.goto("/#/new");
+  await page.goto("/new");
   await page
     .getByLabel("Название просьбы", { exact: true })
     .fill("Проверка браузером");
@@ -37,8 +37,8 @@ test("real registration, request, profile, navigation and responsive layout", as
   await expect(
     page.getByRole("heading", { name: "Отклики", exact: true }),
   ).toBeVisible();
-  await page.goto("/#/profile");
-  await page.getByRole("link", { name: "Settings", exact: true }).click();
+  await page.goto("/profile");
+  await page.getByRole("link", { name: /Settings/ }).click();
   await expect(page.getByLabel("Имя", { exact: true })).toHaveValue(
     "Browser member",
   );
@@ -51,7 +51,7 @@ test("real registration, request, profile, navigation and responsive layout", as
   await expect(page.getByLabel("О себе", { exact: true })).toHaveValue(
     "Проверка сохранения",
   );
-  await page.goto("/#/");
+  await page.goto("/");
   await expect(
     page.getByRole("heading", { name: "Nearby requests" }),
   ).toBeVisible();
@@ -63,11 +63,11 @@ test("real registration, request, profile, navigation and responsive layout", as
     path: "test-results/home-" + test.info().project.name + ".png",
     fullPage: true,
   });
-  await page.goto("/#/map");
+  await page.goto("/map");
   await expect(
     page.getByText("Карта пока не подключена.", { exact: false }),
   ).toBeVisible();
-  await page.goto("/#/messages");
+  await page.goto("/messages");
   await expect(
     page.getByText("Личные чаты пока не подключены.", { exact: false }),
   ).toBeVisible();

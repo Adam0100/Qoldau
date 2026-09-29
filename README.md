@@ -1,6 +1,87 @@
 # Qoldau
 
-Учебная платформа взаимопомощи: React + Vite + React Router + Ant Design, Java 21 + Spring Boot + Spring Security + Spring Data JPA + Flyway, PostgreSQL 16. Без Docker.
+## Публикация на Render: одна ссылка
+
+Ошибка `mvn: command not found` возникает из-за Node Runtime. Для этого проекта нужен **Web Service / Docker**. Dockerfile в корне собирает frontend (`npm ci`, `npm run build`), копирует `frontend/dist` в статические ресурсы Spring Boot, собирает Maven/Java 21 и запускает JAR в Java 21 JRE от непривилегированного пользователя. PostgreSQL в образ не входит. Локальные PowerShell-скрипты сохранены.
+
+### 1. Отправить изменения в GitHub
+
+Из корня проекта, после проверки `git diff`:
+
+```powershell
+git status
+git diff --check
+git add Dockerfile .dockerignore README.md backend/src backend/test.ps1 frontend/src/main.tsx frontend/src/api.ts frontend/vite.config.ts frontend/.env.example frontend/tests
+git commit -m "Prepare single-domain Docker deployment on Render"
+git push origin HEAD
+```
+
+Если remote ещё не настроен: `git remote add origin https://github.com/YOUR-ACCOUNT/Qoldau.git`, затем `git push -u origin HEAD`. `.runtime`, пароли, `.env`, node_modules и сборки не добавляйте.
+
+### 2. Создать PostgreSQL
+
+В Render выберите **New → Postgres**, имя, базу `qoldau`, пользователя и PostgreSQL **16**, регион будущего Web Service. Тариф и стоимость выберите самостоятельно; этот репозиторий ничего автоматически не создаёт. Дождитесь Available. Сохраните Hostname, Port, Database, Username и Password из Connections. Для приложения в том же регионе используйте внутренний hostname; внешний доступ к базе ограничьте. Настройте резервное копирование по возможностям выбранного тарифа. [Документация Render Postgres](https://render.com/docs/postgresql-creating-connecting).
+
+### 3. Создать Web Service
+
+**New → Web Service → GitHub → репозиторий Qoldau**, нужная ветка. Старый сервис с Node Runtime замените Docker-сервисом, если интерфейс не позволяет сменить Runtime.
+
+| Поле | Значение |
+| --- | --- |
+| Service Type | Web Service |
+| Language / Runtime | Docker |
+| Region | Тот же регион, что у PostgreSQL |
+| Root Directory | Оставить пустым — корень репозитория |
+| Dockerfile Path | `./Dockerfile` |
+| Docker Build Context | `.` |
+| Docker Command | Оставить пустым: используется ENTRYPOINT |
+| Build / Start Command | Не задавать `mvn` или `npm`: сборка и запуск описаны Dockerfile |
+| Health Check Path | `/health` |
+
+`/health` публичен, проверяет соединение с БД: 200 `{"status":"UP"}`, при недоступной БД — 503 без подробностей подключения. [Docker на Render](https://render.com/docs/docker).
+
+### 4. Переменные окружения Web Service
+
+| Переменная | Значение / пример без секретов |
+| --- | --- |
+| `SPRING_PROFILES_ACTIVE` | `prod` (уже установлено в Dockerfile, не заменять локальным профилем) |
+| `DB_URL` | `jdbc:postgresql://dpg-EXAMPLE-a:5432/qoldau` — реальные внутренний Hostname, Port и Database из Render |
+| `DB_USER` | Реальный Username из Connections, например `qoldau` |
+| `DB_PASSWORD` | Реальный Password, только в Environment Render; не в Git и не в Docker build args |
+| `FRONTEND_ORIGIN` | `https://qoldau-example.onrender.com` — точный публичный адрес этого сервиса, без завершающего `/` и пути |
+| `PORT` | Render задаёт автоматически; Spring слушает `0.0.0.0:${PORT}`, локально по умолчанию 8080 |
+| `JAVA_TOOL_OPTIONS` | Необязательно: `-XX:MaxRAMPercentage=65.0`, если нужно ограничить heap с учётом памяти тарифа |
+
+Render URL вида `postgresql://user:password@host/db` нельзя вставлять в `DB_URL` как есть: используйте JDBC-формат из таблицы, имя и пароль отдельно. Для внешней БД используйте её TLS-настройки (например `?sslmode=verify-full` с доверенным сертификатом). В production нет fallback на localhost: отсутствие обязательных настроек приводит к ошибке запуска.
+
+Production-профиль включает обработку forwarded-заголовков reverse proxy Render, HTTPS Secure/HttpOnly session cookie и SameSite=Lax. `COOKIE_SECURE` и `COOKIE_SAME_SITE` нужны только для локального профиля; на Render их не задавайте. CSRF остаётся включённым, frontend получает токен через `/api/auth/csrf`; CORS разрешает только `FRONTEND_ORIGIN`. При подключении собственного домена обновите origin. Не открывайте backend напрямую в обход доверенного reverse proxy.
+
+### 5. Deploy и проверка
+
+Нажмите Deploy. Flyway автоматически применяет `V1__core.sql` и `V2__community_modules.sql` к новой базе, Hibernate проверяет схему (`validate`). Существующие миграции не меняйте; изменения схемы добавляйте новой миграцией. Локальная база автоматически на Render не переносится.
+
+Откройте `https://YOUR-SERVICE.onrender.com`: зарегистрируйтесь, войдите, создайте просьбу, обновите `/profile/settings` и страницу `/requests/ID`, выйдите и войдите снова. Frontend и `/api` обслуживает один JAR на одном домене. Неизвестный `/api/...` возвращает JSON 401 без входа или 404 после входа, а не `index.html`; запрос изменения без CSRF получает 403. Для новых React-маршрутов обновляйте allowlist в `SpaController.java`.
+
+### Данные, сессии и файлы
+
+Загрузка файлов сейчас **не реализована**: нет upload endpoint, MultipartFile или записи пользовательских файлов на диск. Пользователи, просьбы, Wishes, Stars и аукционы находятся в отдельной PostgreSQL. Перезапуск приложения их не удаляет. Сессии хранятся в памяти: после deploy/перезапуска нужно войти повторно; пока используйте один экземпляр backend. Для нескольких экземпляров потребуется общее хранилище сессий, например Spring Session JDBC/Redis.
+
+Если позже добавите загрузки, храните их в S3-совместимом object storage, а в PostgreSQL — ключи объектов. Альтернатива — подключённый Render Persistent Disk и отдельный каталог загрузок с резервным копированием; запись должна идти именно в mount path, с правами пользователя контейнера `qoldau`. Файлы в обычной файловой системе контейнера теряются при замене сервиса. Диск имеет ограничения масштабирования и доступности по тарифам; сейчас он приложению не нужен. [Persistent Disks](https://render.com/docs/disks).
+
+### Проверка Docker вручную
+
+Проверка запущенного production JAR с forwarded HTTPS подтвердила `Secure`, `HttpOnly`, `SameSite=Lax` у session cookie и заголовок HSTS. Это проверка приложения за имитированным proxy, а не фактического TLS-развёртывания на Render.
+
+```powershell
+docker build -t qoldau .
+# .env.render.local создаётся локально, исключён из Git и Docker context.
+# Укажите prod, DB_URL, DB_USER, DB_PASSWORD, FRONTEND_ORIGIN доступного HTTPS-прокси.
+docker run --rm --env-file .env.render.local -p 8080:8080 qoldau
+```
+
+Для локального HTTP используйте существующие PowerShell-команды ниже: production Secure-cookie рассчитаны на HTTPS. Docker-сборка пропускает интеграционные тесты, которым нужна отдельная PostgreSQL; запускайте `backend/test.ps1` до публикации.
+
+Учебная платформа взаимопомощи: React + Vite + React Router + Ant Design, Java 21 + Spring Boot + Spring Security + Spring Data JPA + Flyway, PostgreSQL 16. Локально — PowerShell; на Render — Docker и отдельная PostgreSQL.
 
 Макеты не были доступны во входном сообщении. Интерфейс создан по описанию: зелёная палитра, карточки, адаптивная главная и навигация Home / Map / + / Messages / Profile.
 
@@ -88,7 +169,7 @@ cd backend
 - Ставки обрабатываются транзакционно с `SELECT FOR UPDATE`: время и текущая цена проверяются после получения блокировки, деньги хранятся в NUMERIC/BigDecimal. Равные ставки и ставки продавца запрещены.
 - Закрытие аукционов каждые 5 секунд и при открытии карточки. После простоя backend завершает просроченные лоты. Победитель — автор максимальной принятой ставки; без ставок победителя нет. Повторное завершение безопасно.
 - Реальные состояния загрузки, пустого списка, ошибки API. Никаких фиктивных «живых» записей.
-- Адаптация под телефон и компьютер, HashRouter для статического хостинга.
+- Адаптация под телефон и компьютер, BrowserRouter; Spring Boot открывает вложенные маршруты.
 
 ## Пока не реализовано
 
@@ -101,7 +182,9 @@ cd backend
 
 ## Проверки
 
-Проверено на этом компьютере 28.09.2026: `mvn package` — успешно, 5 интеграционных тестов — успешно, `npm run build` — успешно, 4 браузерных теста (desktop/mobile) — успешно. Исполняемый JAR запущен с PostgreSQL 16.9; API и frontend отвечают. Созданные при проверке записи удалены из основной базы.
+Повторный браузерный прогон 29.09.2026: **8 из 8 сценариев desktop/mobile прошли** против финального JAR со встроенным frontend на `http://localhost:18080`, с отдельной `qoldau_test`. Проверены регистрация, профиль, просьбы, community-модули, прямые вложенные URL и обновление страниц. Для повтора задайте `E2E_BASE_URL` адресом своего тестового JAR и выполните `npm.cmd test -- --workers=1` в `frontend`. Тестовые записи остаются только в `qoldau_test`.
+
+Проверено 29.09.2026: `npm ci`, `npm run build`, Maven package и JAR со встроенным frontend — успешно. 8 backend-тестов на отдельной PostgreSQL 16.9 — успешно, включая production-профиль, CORS, CSRF, forwarded HTTPS, SPA и API 404. В этой Windows-среде стандартный fork Surefire не загрузил классы из пути проекта; повторный запуск с `-DforkCount=0` прошёл. Команда: `powershell -NoProfile -ExecutionPolicy Bypass -File backend/test.ps1 -DforkCount=0`. Docker CLI установлен, но Engine недоступен: **контейнер не собран и не проверен**.
 
 PostgreSQL должен быть запущен. Backend-тесты используют **отдельную** базу `qoldau_test`, не основную базу.
 
@@ -132,7 +215,7 @@ Backend: CSRF, анонимный доступ, валидация, профил
 | COOKIE_SECURE | false для локального HTTP |
 | COOKIE_SAME_SITE | lax |
 
-Frontend: `VITE_API_URL` (по умолчанию `/api`), `VITE_BASE_PATH` (по умолчанию `/`). Пример в `frontend/.env.example`. Vite-переменные публичны: секретов в них быть не должно.
+Frontend всегда использует относительный `/api` и корень `/`. Для локального Vite можно задать `API_PROXY_TARGET`; в Docker эта настройка не используется.
 
 ## API
 
@@ -151,26 +234,6 @@ Frontend: `VITE_API_URL` (по умолчанию `/api`), `VITE_BASE_PATH` (п�
 Списки: `?page=0`, ответ `{items,total}`. Просьбы: дополнительные `city` и `category` (EVERYDAY, TRANSPORT, EDUCATION, OTHER). Статусы просьб OPEN/CLOSED; желаний OPEN/PLEDGED/FULFILLED. Даты аукционов — ISO 8601 UTC; интерфейс отображает местное время.
 
 Ошибки: `{message,fields?}`, HTTP 400 — невалидные данные, 401 — нет входа, 403 — права/CSRF, 404 — нет записи, 409 — конфликт состояния или дубликат. Чужие email и хеши паролей в публичных ответах отсутствуют.
-
-## GitHub Pages и размещение
-
-GitHub Pages подходит **только для frontend**. PostgreSQL и Java API нужно разместить отдельно; этот проект никуда автоматически не публикуется.
-
-Для репозитория Qoldau:
-
-```powershell
-cd frontend
-$env:VITE_BASE_PATH = '/Qoldau/'
-$env:VITE_API_URL = 'https://api.example.org/api'
-npm.cmd ci
-npm.cmd run build
-```
-
-Опубликуйте содержимое `frontend/dist` через Pages/Actions. Для собственного домена base должен быть `/`. HashRouter сохраняет переходы и обновление страницы (`/#/requests/1`) без настройки серверных rewrite.
-
-На API задайте `FRONTEND_ORIGIN=https://YOUR-NAME.github.io` (без пути репозитория), `COOKIE_SECURE=true`, `COOKIE_SAME_SITE=none`, HTTPS. Браузер может блокировать сторонние cookie между github.io и отдельным доменом API. Для устойчивой сессионной авторизации используйте собственные домены одного сайта, например app.example.org и api.example.org, либо reverse proxy. Не отключайте CSRF и не используйте CORS "*".
-
-Перед публичным размещением обновите зависимости и PostgreSQL до актуального патча, настройте секреты, резервные копии, ограничения доступа к БД и недостающие функции эксплуатации.
 
 ## Структура
 

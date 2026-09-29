@@ -9,6 +9,11 @@ import org.springframework.web.bind.annotation.*;
 
 @RestControllerAdvice
 public class Errors {
+  @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+  ResponseEntity<?> notFound() {
+    return ResponseEntity.status(404).body(Map.of("message", "Not found"));
+  }
+
   private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(Errors.class);
 
   @ExceptionHandler(Exception.class)

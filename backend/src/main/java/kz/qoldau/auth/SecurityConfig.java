@@ -17,8 +17,8 @@ public class SecurityConfig {
   }
 
   @Bean
-  SecurityFilterChain security(HttpSecurity http) throws Exception {
-    return http.cors(c -> {})
+  SecurityFilterChain security(HttpSecurity http, CorsConfigurationSource cors) throws Exception {
+    return http.cors(c -> c.configurationSource(cors))
         .authorizeHttpRequests(
             a ->
                 a.requestMatchers("/api/auth/csrf", "/api/auth/login", "/api/auth/register")
@@ -33,8 +33,13 @@ public class SecurityConfig {
                         "/api/auctions/*",
                         "/api/auctions/*/bids")
                     .permitAll()
-                    .anyRequest()
-                    .authenticated())
+                    .requestMatchers("/api", "/api/**")
+                    .authenticated()
+                    .requestMatchers(org.springframework.http.HttpMethod.GET, "/**")
+                    .permitAll()
+                    .requestMatchers(org.springframework.http.HttpMethod.HEAD, "/**")
+                    .permitAll()
+                    .anyRequest().denyAll())
         .exceptionHandling(
             e ->
                 e.authenticationEntryPoint(

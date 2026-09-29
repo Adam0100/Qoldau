@@ -7,7 +7,7 @@ test("reference screens, honest unavailable features and responsive layouts", as
 }, testInfo) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/#/welcome");
+  await page.goto("/welcome");
   await expect(
     page.getByRole("heading", { name: "Qoldau+", exact: true }),
   ).toBeVisible();
@@ -101,8 +101,8 @@ test("reference screens, honest unavailable features and responsive layouts", as
     ["my-requests", "/my-requests", "Мои просьбы"],
   ];
   for (const [name, path, title] of screens) {
-    await page.goto("/#" + path);
-    // Hash-only navigation does not remount the session provider after request-context login.
+    await page.goto(path);
+    // Verify server-side handling of a direct URL and a browser refresh.
     await page.reload();
     await expect(
       page.getByRole("heading", { name: title, exact: true }).first(),
@@ -121,12 +121,12 @@ test("reference screens, honest unavailable features and responsive layouts", as
       fullPage: true,
     });
   }
-  await page.goto("/#/stars");
+  await page.goto("/stars");
   await expect(page.getByRole("button", { name: /Cash/ })).toBeDisabled();
   await expect(
     page.getByText("Баллы и ранги пока не начисляются.", { exact: true }),
   ).toBeVisible();
-  await page.goto("/#/profile");
+  await page.goto("/profile");
   await expect(
     page.getByRole("button", { name: /My help history/ }),
   ).toBeDisabled();
@@ -146,7 +146,7 @@ test("reference screens, honest unavailable features and responsive layouts", as
         "/auctions",
         "/requests/" + request.id,
       ]) {
-        await page.goto("/#" + path);
+        await page.goto(path);
         await expect(page.locator(".loading")).toHaveCount(0);
         expect(
           await page.evaluate(

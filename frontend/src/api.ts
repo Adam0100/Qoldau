@@ -1,4 +1,4 @@
-const base = import.meta.env.VITE_API_URL || "/api";
+const base = "/api";
 let csrf: string | undefined;
 export class ApiError extends Error {
   constructor(

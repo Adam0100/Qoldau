@@ -1,0 +1,26 @@
+# Allow only build inputs; local credentials and Render secret files stay out.
+**
+!Dockerfile
+!.dockerignore
+!frontend/
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/index.html
+!frontend/tsconfig.json
+!frontend/vite.config.ts
+!frontend/src/
+!frontend/src/**
+!frontend/public/
+!frontend/public/**
+!backend/
+!backend/pom.xml
+!backend/src/
+!backend/src/**
+**/.env*
+**/*.pem
+**/*.key
+**/*.p12
+**/*.jks
+**/node_modules/**
+**/target/**
+**/static/**
